@@ -1,10 +1,4 @@
-FROM rust:1.76.0-slim-bookworm AS builder
+FROM alpine:3
 
-WORKDIR /usr/src/refinery
-COPY . .
-
-RUN cargo build --release
-
-FROM debian:12.5-slim
-COPY --from=builder /usr/src/refinery /usr/local/bin/refinery
+COPY ./target/release/refinery /usr/local/bin/refinery
 CMD ["refinery"]

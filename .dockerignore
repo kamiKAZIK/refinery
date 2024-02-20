@@ -1,0 +1,8 @@
+# Ignore everything
+**
+
+# Allow files and directories
+!target/release/refinery
+!target/debug/refinery
+!target/x86_64-unknown-linux-musl/release/refinery
+!target/x86_64-unknown-linux-musl/debug/refinery
