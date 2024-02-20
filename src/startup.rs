@@ -14,6 +14,7 @@ pub async fn run(configuration: Settings) {
         .set_keep_alive(Duration::from_secs(5));
 
     let (client, mut eventloop) = AsyncClient::new(mqtt_options, 10);
+
     client
         .subscribe("hello/rumqtt", QoS::AtMostOnce)
         .await
