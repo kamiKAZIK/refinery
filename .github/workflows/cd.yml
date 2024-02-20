@@ -84,6 +84,7 @@ jobs:
           path: target/${{ env.TARGET }}/release/refinery
   docker:
     runs-on: ubuntu-22.04
+    needs: build
     steps:
       - name: Checkout the code
         uses: actions/checkout@v4
