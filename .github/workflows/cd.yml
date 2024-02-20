@@ -82,24 +82,24 @@ jobs:
         with:
           name: refinery-binary
           path: target/${{ env.TARGET }}/release/refinery
-  # docker:
-  #   runs-on: ubuntu-22.04
-  #   steps:
-  #     - name: Checkout the code
-  #       uses: actions/checkout@v4
-  #     - name: Set up QEMU
-  #       uses: docker/setup-qemu-action@v3
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v3
-  #     - name: Download artifact
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: refinery-binary
-  #         path: target/release/
-  #     - name: Build and push
-  #       uses: docker/build-push-action@v5
-  #       with:
-  #         context: .
-  #         platforms: linux/arm64
-  #         push: false
-  #         tags: kami/refinery:latest
+  docker:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: refinery-binary
+          path: target/release/
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/arm64
+          push: false
+          tags: kami/refinery:latest
