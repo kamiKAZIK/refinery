@@ -4,5 +4,5 @@
 # Allow files and directories
 !target/release/refinery
 !target/debug/refinery
-!target/x86_64-unknown-linux-musl/release/refinery
-!target/x86_64-unknown-linux-musl/debug/refinery
+!target/aarch64-unknown-linux-gnu/release/refinery
+!target/aarch64-unknown-linux-gnu/debug/refinery
