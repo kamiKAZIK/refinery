@@ -4,6 +4,7 @@ on:
     tags:
       - '**'
 env:
+  CARGO_TARGET: aarch64-unknown-linux-gnu
   DOCKER_REGISTRY: ghcr.io
   DOCKER_IMAGE_NAME: ${{ github.repository }}
 jobs:
@@ -16,18 +17,16 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Build
-        env:
-          TARGET: aarch64-unknown-linux-gnu
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu
-          rustup target add ${{ env.TARGET }}
-          cargo build --release --target ${{ env.TARGET }}
+          rustup target add ${{ env.CARGO_TARGET }}
+          cargo build --release --target ${{ env.CARGO_TARGET }}
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: refinery-binary
-          path: target/${{ env.TARGET }}/release/refinery
+          path: target/${{ env.CARGO_TARGET }}/release/refinery
   docker:
     runs-on: ubuntu-22.04
     needs: build
