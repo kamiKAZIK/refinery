@@ -4,8 +4,9 @@ use rmp_serde::{encode, decode};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Reading {
-    device_id: Uuid,
-    reading: f64
+    pub device_id: Uuid,
+    pub timestamp: i64,
+    pub reading: f64,
 }
 
 impl From<&Reading> for Vec<u8> {
@@ -28,7 +29,7 @@ mod tests {
 
     #[test]
     fn test_valid_encoding() {
-        let input_reading: Reading = Reading { device_id: Uuid::new_v4(), reading: 12.0 };
+        let input_reading: Reading = Reading { device_id: Uuid::new_v4(), timestamp: 1299038700000, reading: 12.0 };
 
         assert_eq!(
             rmp_serde::to_vec(&(input_reading.device_id, input_reading.reading)).unwrap(),
@@ -38,7 +39,7 @@ mod tests {
 
     #[test]
     fn test_valid_decoding() {
-        let input_reading: Reading = Reading { device_id: Uuid::new_v4(), reading: 12.0 };
+        let input_reading: Reading = Reading { device_id: Uuid::new_v4(), timestamp: 1299038700000, reading: 12.0 };
 
         let expected_buf: Vec<u8> = rmp_serde::to_vec(&(input_reading.device_id, input_reading.reading)).unwrap();
 

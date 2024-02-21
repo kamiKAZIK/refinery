@@ -4,8 +4,10 @@ use std::env;
 
 #[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
-pub struct Database {
-    pub url: String,
+pub struct Scylla {
+    pub uri: String,
+    pub user: String,
+    pub password: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -19,7 +21,7 @@ pub struct Mqtt {
 #[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
 pub struct Settings {
-    pub database: Database,
+    pub scylla: Scylla,
     pub mqtt: Mqtt,
 }
 

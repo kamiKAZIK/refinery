@@ -1,5 +1,7 @@
-[database]
-url = "postgres://postgres@localhost"
+[scylla]
+uri = "127.0.0.1:9042"
+user = "cassandra"
+password = "cassandra"
 
 [mqtt]
 client_id = "refinery"
