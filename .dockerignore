@@ -2,6 +2,8 @@
 **
 
 # Allowed files and directories
+!entrypoint.sh
+
 !config/default.toml
 
 !target/release/refinery
