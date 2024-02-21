@@ -6,6 +6,7 @@ use std::env;
 #[allow(unused)]
 pub struct Scylla {
     pub uri: String,
+    pub keyspace: String,
     pub user: String,
     pub password: String,
 }

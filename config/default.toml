@@ -1,5 +1,6 @@
 [scylla]
 uri = "127.0.0.1:9042"
+keyspace = "refinery"
 user = "cassandra"
 password = "cassandra"
 

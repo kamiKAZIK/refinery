@@ -4,6 +4,9 @@ use scylla::SessionBuilder;
 
 use crate::configuration::Settings;
 use crate::messages::Reading;
+use crate::storage::scylla::ScyllaStorage;
+
+type StorageImpl = ScyllaStorage;
 
 pub async fn run(configuration: Settings) {
     let mut mqtt_options: MqttOptions = MqttOptions::new(
@@ -28,8 +31,8 @@ pub async fn run(configuration: Settings) {
         .await
         .unwrap();
 
-    session.query("CREATE KEYSPACE IF NOT EXISTS refinery WITH replication = {'class': 'SimpleStrategy', 'replication_factor' : 1}", &[]).await.unwrap();
-    session.query("CREATE TABLE IF NOT EXISTS readings (device_id UUID PRIMARY KEY, timestamp TIMESTAMP, reading DECIMAL)", &[]).await.unwrap();
+    let storage: StorageImpl = StorageImpl::new(session, configuration.scylla.keyspace);
+    storage.init().await;
 
     while let Ok(event) = eventloop.poll().await {
         if let Event::Incoming(Incoming::Publish(packet)) = event {
@@ -37,8 +40,8 @@ pub async fn run(configuration: Settings) {
 
             match Reading::try_from(packet.payload.as_ref()) {
                 Ok(message) => {
-                    let statement = session.prepare("INSERT INTO readings (device_id, timestamp, reading) VALUES (?, ?, ?)").await.unwrap();
-                    session.execute(&statement, (message.device_id, message.timestamp, message.reading)).await.unwrap();
+                    // let statement = session.prepare("INSERT INTO readings (device_id, timestamp, reading) VALUES (?, ?, ?)").await.unwrap();
+                    // session.execute(&statement, (message.device_id, message.timestamp, message.reading)).await.unwrap();
 
                     println!("Payload = {message:?}")
                 },
