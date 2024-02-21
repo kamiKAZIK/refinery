@@ -1,3 +1,10 @@
+## [1.0.6](https://github.com/kamiKAZIK/refinery/compare/1.0.5...1.0.6) (2024-02-21)
+
+
+### Bug Fixes
+
+* **ci:** WIP ([e09be18](https://github.com/kamiKAZIK/refinery/commit/e09be1869f015cf2812f24a70ee001e7198f831d))
+
 ## [1.0.5](https://github.com/kamiKAZIK/refinery/compare/1.0.4...1.0.5) (2024-02-21)
 
 
