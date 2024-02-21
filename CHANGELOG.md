@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/kamiKAZIK/refinery/compare/1.0.1...1.0.2) (2024-02-21)
+
+
+### Bug Fixes
+
+* **ci:** testing ([872415d](https://github.com/kamiKAZIK/refinery/commit/872415dc0eca86bb8257eeda26de7418127f8ed4))
+
 ## [1.0.1](https://github.com/kamiKAZIK/refinery/compare/1.0.0...1.0.1) (2024-02-21)
 
 
