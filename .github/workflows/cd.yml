@@ -2,7 +2,7 @@ name: Docker Build/Publish Image
 on:
   push:
     tags:
-      - '*'
+      - '**'
 env:
   TARGET: aarch64-unknown-linux-gnu
 jobs:
