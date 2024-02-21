@@ -1,8 +1,8 @@
 # Ignore everything
 **
 
-# Allow files and directories
+# Allowed files and directories
+!config/default.toml
+
 !target/release/refinery
-!target/debug/refinery
 !target/aarch64-unknown-linux-gnu/release/refinery
-!target/aarch64-unknown-linux-gnu/debug/refinery
