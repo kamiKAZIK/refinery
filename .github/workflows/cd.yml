@@ -1,8 +1,8 @@
 name: Docker Build/Publish Image
 on:
   push:
-    branches:
-      - main
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
 env:
   TARGET: aarch64-unknown-linux-gnu
 jobs:
@@ -11,12 +11,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Build
         run: |
-             sudo apt-get update
-             sudo apt-get install -y gcc-aarch64-linux-gnu
-             rustup target add ${{ env.TARGET }}
-             cargo build --release --target ${{ env.TARGET }}
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+          rustup target add ${{ env.TARGET }}
+          cargo build --release --target ${{ env.TARGET }}
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
