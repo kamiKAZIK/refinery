@@ -6,7 +6,8 @@ on:
 env:
   TARGET: aarch64-unknown-linux-gnu
   DOCKER_REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  #IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: kamiKAZIK/refinery
 jobs:
   build:
     runs-on: ubuntu-22.04
