@@ -1,10 +1,12 @@
 use rumqttc::{MqttOptions, AsyncClient, Event, Incoming, QoS};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use scylla::SessionBuilder;
 
 use crate::configuration::Settings;
-use crate::messages::Reading;
+use crate::messages;
+use crate::models;
 use crate::storage::scylla::ScyllaStorage;
+use crate::storage::Storage;
 
 type StorageImpl = ScyllaStorage;
 
@@ -27,23 +29,31 @@ pub async fn run(configuration: Settings) {
     let session = SessionBuilder::new()
         .known_node(&configuration.scylla.uri)
         .user(&configuration.scylla.user, &configuration.scylla.password)
+        .use_keyspace(&configuration.scylla.keyspace, false)
         .build()
         .await
         .unwrap();
 
-    let storage: StorageImpl = StorageImpl::new(session, configuration.scylla.keyspace);
-    storage.init().await;
+    let storage: StorageImpl = StorageImpl::new(session);
+    storage.init()
+        .await;
 
     while let Ok(event) = eventloop.poll().await {
         if let Event::Incoming(Incoming::Publish(packet)) = event {
             println!("Received = {:?}", packet.payload.as_ref());
 
-            match Reading::try_from(packet.payload.as_ref()) {
+            match messages::Reading::try_from(packet.payload.as_ref()) {
                 Ok(message) => {
-                    // let statement = session.prepare("INSERT INTO readings (device_id, timestamp, reading) VALUES (?, ?, ?)").await.unwrap();
-                    // session.execute(&statement, (message.device_id, message.timestamp, message.reading)).await.unwrap();
+                    let item: models::Reading = models::Reading{
+                        device_id: message.device_id,
+                        device_timestamp: message.timestamp as i64,
+                        reception_timestamp: Instant::now().elapsed().as_secs() as i64,
+                        measurement_kind: String::from("HUM"),
+                        reading: message.reading,
+                    };
 
-                    println!("Payload = {message:?}")
+                    storage.create_reading(item)
+                        .await;
                 },
                 Err(error) => println!("Error = {error}"),
             }

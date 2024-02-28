@@ -5,7 +5,7 @@ use rmp_serde::{encode, decode};
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Reading {
     pub device_id: Uuid,
-    pub timestamp: i64,
+    pub timestamp: u64,
     pub reading: f64,
 }
 

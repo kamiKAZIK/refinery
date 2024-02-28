@@ -1,6 +1,7 @@
 mod configuration;
 mod startup;
 mod messages;
+mod models;
 mod storage;
 
 use crate::configuration::Settings;
