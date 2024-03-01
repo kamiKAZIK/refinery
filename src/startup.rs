@@ -40,20 +40,22 @@ pub async fn run(configuration: Settings) {
 
     while let Ok(event) = eventloop.poll().await {
         if let Event::Incoming(Incoming::Publish(packet)) = event {
-            println!("Received = {:?}", packet.payload.as_ref());
+            //println!("Received = {:?}", packet.payload.as_ref());
 
-            match messages::Reading::try_from(packet.payload.as_ref()) {
+            match messages::Envelope::try_from(packet.payload.as_ref()) {
                 Ok(message) => {
-                    let item: models::Reading = models::Reading{
-                        device_id: message.device_id,
-                        device_timestamp: message.timestamp as i64,
-                        reception_timestamp: Instant::now().elapsed().as_secs() as i64,
-                        measurement_kind: String::from("HUM"),
-                        reading: message.reading,
-                    };
-
-                    storage.create_reading(item)
-                        .await;
+                    for item in message.readings {
+                        let record: models::Reading = models::Reading{
+                            device_id: message.device_id,
+                            alive: message.alive as i64,
+                            timestamp: Instant::now().elapsed().as_secs() as i64,
+                            qualifier: item.qualifier as i16,
+                            reading: item.value,
+                        };
+    
+                        storage.create_reading(record)
+                            .await;
+                    }
                 },
                 Err(error) => println!("Error = {error}"),
             }

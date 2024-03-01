@@ -21,7 +21,7 @@ impl ScyllaStorage {
 
     async fn create_tables(&self) {
         let queries: [String; 1] = [
-            String::from("CREATE TABLE IF NOT EXISTS readings (device_id UUID PRIMARY KEY, device_timestamp TIMESTAMP, reception_timestamp TIMESTAMP, measurement_kind TEXT, reading DECIMAL)"),
+            String::from("CREATE TABLE IF NOT EXISTS readings (device_id UUID PRIMARY KEY, alive INT, timestamp INT, qualifier SMALLINT, reading DECIMAL)"),
         ];
 
         for query in queries {
@@ -38,7 +38,7 @@ impl ScyllaStorage {
 
 impl Storage for ScyllaStorage {
     async fn create_reading(&self, item: Reading) {
-        let statement: PreparedStatement = self.session.prepare("INSERT INTO readings (device_id, device_timestamp, reception_timestamp, measurement_kind, reading) VALUES (?, ?, ?, ?, ?)")
+        let statement: PreparedStatement = self.session.prepare("INSERT INTO readings (device_id, alive, timestamp, qualifier, reading) VALUES (?, ?, ?, ?, ?)")
             .await
             .unwrap();
 

@@ -1,25 +1,24 @@
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
-use rmp_serde::{encode, decode};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Reading {
+    pub qualifier: u8,
+    pub value: f64,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub struct Envelope {
     pub device_id: Uuid,
-    pub timestamp: u64,
-    pub reading: f64,
+    pub alive: u64,
+    pub readings: Vec<Reading>,
 }
 
-impl From<&Reading> for Vec<u8> {
-    fn from(value: &Reading) -> Self {
-        encode::to_vec(value).unwrap()
-    }
-}
-
-impl TryFrom<&[u8]> for Reading {
-    type Error = decode::Error;
+impl TryFrom<&[u8]> for Envelope {
+    type Error = serde_json::Error;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        decode::from_slice(value)
+        serde_json::from_slice(value)
     }
 }
 
@@ -28,24 +27,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_valid_encoding() {
-        let input_reading: Reading = Reading { device_id: Uuid::new_v4(), timestamp: 1299038700000, reading: 12.0 };
-
-        assert_eq!(
-            rmp_serde::to_vec(&(input_reading.device_id, input_reading.reading)).unwrap(),
-            rmp_serde::to_vec(&input_reading).unwrap()
-        );
-    }
-
-    #[test]
     fn test_valid_decoding() {
-        let input_reading: Reading = Reading { device_id: Uuid::new_v4(), timestamp: 1299038700000, reading: 12.0 };
+        let input_envelope: Envelope = Envelope { device_id: Uuid::new_v4(), alive: 1000, readings: vec![Reading { qualifier: b'H', value: 12.0 }] };
 
-        let expected_buf: Vec<u8> = rmp_serde::to_vec(&(input_reading.device_id, input_reading.reading)).unwrap();
+        let expected_buf: Vec<u8> = serde_json::to_vec(&(input_envelope.device_id, input_envelope.alive, &input_envelope.readings)).unwrap();
 
         assert_eq!(
-            input_reading,
-            rmp_serde::from_slice(&expected_buf).unwrap()
+            input_envelope,
+            serde_json::from_slice(&expected_buf).unwrap()
         );
     }
 }
