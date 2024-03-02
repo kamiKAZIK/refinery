@@ -1,12 +1,10 @@
-use serde::{Serialize, Deserialize};
 use uuid::Uuid;
-use scylla::macros::{FromRow, SerializeRow};
+use std::time::{Duration, SystemTime};
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, FromRow, SerializeRow)]
 pub struct Reading {
     pub device_id: Uuid,
-    pub alive: i64,
-    pub timestamp: i64,
-    pub qualifier: i16,
+    pub alive: Duration,
+    pub timestamp: SystemTime,
+    pub qualifier: u8,
     pub reading: f64,
 }

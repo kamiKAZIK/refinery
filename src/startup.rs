@@ -1,5 +1,6 @@
 use rumqttc::{MqttOptions, AsyncClient, Event, Incoming, QoS};
-use std::time::{Duration, Instant};
+use std::time::SystemTime;
+use std::time::Duration;
 use scylla::SessionBuilder;
 
 use crate::configuration::Settings;
@@ -47,9 +48,9 @@ pub async fn run(configuration: Settings) {
                     for item in message.readings {
                         let record: models::Reading = models::Reading{
                             device_id: message.device_id,
-                            alive: message.alive as i64,
-                            timestamp: Instant::now().elapsed().as_secs() as i64,
-                            qualifier: item.qualifier as i16,
+                            alive: Duration::from_millis(message.alive),
+                            timestamp: SystemTime::now(),
+                            qualifier: item.qualifier,
                             reading: item.value,
                         };
     
