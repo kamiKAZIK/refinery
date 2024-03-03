@@ -7,7 +7,7 @@ use scylla::prepared_statement::PreparedStatement;
 use uuid::Uuid;
 
 use crate::models::Reading;
-use crate::storage::Storage;
+use crate::storage::ReadingsRepository;
 
 pub struct ScyllaStorage {
     session: Session,
@@ -66,7 +66,7 @@ impl From<Reading> for ReadingRow {
     }
 }
 
-impl Storage for ScyllaStorage {
+impl ReadingsRepository for ScyllaStorage {
     async fn create_reading(&self, item: Reading) {
         let statement: PreparedStatement = self.session.prepare("INSERT INTO readings (device_id, alive, timestamp, qualifier, reading) VALUES (?, ?, ?, ?, ?)")
             .await

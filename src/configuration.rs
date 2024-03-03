@@ -28,10 +28,10 @@ pub struct Settings {
 
 impl Settings {
     pub fn new() -> Result<Self, ConfigError> {
-        let run_mode: String = env::var("SERVICE_PROFILE")
+        let run_mode = env::var("SERVICE_PROFILE")
             .unwrap_or_else(|_| "development".into());
 
-        let settings: Config = Config::builder()
+        let settings = Config::builder()
             .add_source(File::with_name("config/default"))
             .add_source(File::with_name(&format!("config/{}", run_mode)).required(false))
             .add_source(Environment::with_prefix("refinery"))

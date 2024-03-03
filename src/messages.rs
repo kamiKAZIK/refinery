@@ -28,9 +28,9 @@ mod tests {
 
     #[test]
     fn test_valid_decoding() {
-        let input_envelope: Envelope = Envelope { device_id: Uuid::new_v4(), alive: 1000, readings: vec![Reading { qualifier: b'H', value: 12.0 }] };
+        let input_envelope = Envelope { device_id: Uuid::new_v4(), alive: 1000, readings: vec![Reading { qualifier: b'H', value: 12.0 }] };
 
-        let expected_buf: Vec<u8> = serde_json::to_vec(&(input_envelope.device_id, input_envelope.alive, &input_envelope.readings)).unwrap();
+        let expected_buf = serde_json::to_vec(&(input_envelope.device_id, input_envelope.alive, &input_envelope.readings)).unwrap();
 
         assert_eq!(
             input_envelope,

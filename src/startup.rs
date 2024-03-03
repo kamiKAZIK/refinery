@@ -7,7 +7,7 @@ use crate::configuration::Settings;
 use crate::messages;
 use crate::models;
 use crate::storage::scylla::ScyllaStorage;
-use crate::storage::Storage;
+use crate::storage::ReadingsRepository;
 
 type StorageImpl = ScyllaStorage;
 
