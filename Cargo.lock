@@ -958,6 +958,7 @@ name = "refinery"
 version = "0.1.0"
 dependencies = [
  "config",
+ "futures",
  "log",
  "log4rs",
  "rumqttc",

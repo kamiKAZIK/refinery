@@ -12,13 +12,12 @@ use crate::storage::ReadingsRepository;
 type StorageImpl = ScyllaStorage;
 
 pub async fn run(configuration: Settings) {
-    let mut mqtt_options: MqttOptions = MqttOptions::new(
+    let mut mqtt_options = MqttOptions::new(
         &configuration.mqtt.client_id,
         &configuration.mqtt.host,
         configuration.mqtt.port
     );
-    mqtt_options
-        .set_keep_alive(Duration::from_secs(5));
+    mqtt_options.set_keep_alive(Duration::from_secs(5));
 
     let (client, mut eventloop) = AsyncClient::new(mqtt_options, 10);
 
@@ -35,7 +34,7 @@ pub async fn run(configuration: Settings) {
         .await
         .unwrap();
 
-    let storage: StorageImpl = StorageImpl::new(session);
+    let storage = StorageImpl::new(session);
     storage.init()
         .await;
 
@@ -46,7 +45,7 @@ pub async fn run(configuration: Settings) {
             match messages::Envelope::try_from(packet.payload.as_ref()) {
                 Ok(message) => {
                     for item in message.readings {
-                        let record: models::Reading = models::Reading{
+                        let record = models::Reading{
                             device_id: message.device_id,
                             alive: Duration::from_millis(message.alive),
                             timestamp: SystemTime::now(),
@@ -55,7 +54,8 @@ pub async fn run(configuration: Settings) {
                         };
     
                         storage.create_reading(record)
-                            .await;
+                            .await
+                            .unwrap();
                     }
                 },
                 Err(error) => println!("Error = {error}"),

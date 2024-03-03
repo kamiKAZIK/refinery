@@ -1,9 +1,9 @@
+use std::error::Error;
 use std::ops::{Div, Rem};
 use std::time::UNIX_EPOCH;
 
 use scylla::frame::value::{CqlDuration, CqlTimestamp};
 use scylla::{FromRow, SerializeRow, Session};
-use scylla::prepared_statement::PreparedStatement;
 use uuid::Uuid;
 
 use crate::models::Reading;
@@ -25,18 +25,22 @@ impl ScyllaStorage {
     }
 
     async fn create_tables(&self) {
-        let queries: [String; 1] = [
-            String::from("CREATE TABLE IF NOT EXISTS readings (device_id UUID PRIMARY KEY, alive DURATION, timestamp TIMESTAMP, qualifier SMALLINT, reading DOUBLE)"),
+        let queries = [
+            "CREATE TABLE IF NOT EXISTS readings (device_id UUID PRIMARY KEY, alive DURATION, timestamp TIMESTAMP, qualifier SMALLINT, reading DOUBLE)",
         ];
 
         for query in queries {
-            let statement: PreparedStatement = self.session.prepare(query)
-                .await
-                .unwrap();
-
-            self.session.execute(&statement, &[])
-                .await
-                .unwrap();
+            let prepared_statement = self.session.prepare(query);
+            
+            match prepared_statement.await {
+                Ok(statement) => {
+                    self.session.execute(&statement, &[])
+                        .await
+                },
+                Err(err) => {
+                    Err(err)
+                },
+            }.unwrap();
         }
     }
 }
@@ -67,13 +71,19 @@ impl From<Reading> for ReadingRow {
 }
 
 impl ReadingsRepository for ScyllaStorage {
-    async fn create_reading(&self, item: Reading) {
-        let statement: PreparedStatement = self.session.prepare("INSERT INTO readings (device_id, alive, timestamp, qualifier, reading) VALUES (?, ?, ?, ?, ?)")
-            .await
-            .unwrap();
-
-        self.session.execute(&statement, &ReadingRow::from(item))
-            .await
-            .unwrap();
+    async fn create_reading(&self, item: Reading) -> Result<(), Box<dyn Error>> {
+        let prepared_statement = self.session.prepare("INSERT INTO readings (device_id, alive, timestamp, qualifier, reading) VALUES (?, ?, ?, ?, ?)");
+        
+        match prepared_statement.await {
+            Ok(statement) => {
+                self.session.execute(&statement, &ReadingRow::from(item))
+                    .await
+                    .map(|_| ())
+                    .map_err(|err| err.into())
+            },
+            Err(err) =>{
+                Err(err.into())
+            },
+        }
     }
 }
