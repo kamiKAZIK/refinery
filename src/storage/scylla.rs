@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::ops::{Div, Rem};
-use std::time::UNIX_EPOCH;
-
+use std::time::{SystemTimeError, UNIX_EPOCH};
+use futures::TryFutureExt;
 use scylla::frame::value::{CqlDuration, CqlTimestamp};
 use scylla::{FromRow, SerializeRow, Session};
 use uuid::Uuid;
@@ -30,17 +30,13 @@ impl ScyllaStorage {
         ];
 
         for query in queries {
-            let prepared_statement = self.session.prepare(query);
-            
-            match prepared_statement.await {
-                Ok(statement) => {
+            self.session.prepare(query)
+                .and_then(|statement| async move {
                     self.session.execute(&statement, &[])
                         .await
-                },
-                Err(err) => {
-                    Err(err)
-                },
-            }.unwrap();
+                })
+                .await
+                .unwrap();
         }
     }
 }
@@ -54,36 +50,43 @@ struct ReadingRow {
     reading: f64,
 }
 
-impl From<Reading> for ReadingRow {
-    fn from(value: Reading) -> Self {
-        ReadingRow {
-            device_id: value.device_id,
-            alive: CqlDuration {
-                months: 0,
-                days: value.alive.as_secs().div(24 * 60 * 60) as i32,
-                nanoseconds: value.alive.as_nanos().rem(1000000 * 60 * 60 * 24) as i64
-            },
-            timestamp: CqlTimestamp(value.timestamp.duration_since(UNIX_EPOCH).unwrap().as_millis() as i64),
-            qualifier: value.qualifier as i16,
-            reading: value.reading,
-        }
+impl TryFrom<Reading> for ReadingRow {
+    type Error = SystemTimeError;
+
+    fn try_from(value: Reading) -> Result<Self, Self::Error> {
+        value.timestamp.duration_since(UNIX_EPOCH)
+            .map(|duration| {
+                ReadingRow {
+                    device_id: value.device_id,
+                    alive: CqlDuration {
+                        months: 0,
+                        days: value.alive.as_secs().div(24 * 60 * 60) as i32,
+                        nanoseconds: value.alive.as_nanos().rem(1000000 * 60 * 60 * 24) as i64
+                    },
+                    timestamp: CqlTimestamp(duration.as_millis() as i64),
+                    qualifier: value.qualifier as i16,
+                    reading: value.reading,
+                }
+            })
     }
 }
 
 impl ReadingsRepository for ScyllaStorage {
     async fn create_reading(&self, item: Reading) -> Result<(), Box<dyn Error>> {
-        let prepared_statement = self.session.prepare("INSERT INTO readings (device_id, alive, timestamp, qualifier, reading) VALUES (?, ?, ?, ?, ?)");
-        
-        match prepared_statement.await {
-            Ok(statement) => {
-                self.session.execute(&statement, &ReadingRow::from(item))
+        match ReadingRow::try_from(item) {
+            Ok(row) => {
+                self.session.prepare("INSERT INTO readings (device_id, alive, timestamp, qualifier, reading) VALUES (?, ?, ?, ?, ?)")
+                    .and_then(|statement| async move {
+                        self.session.execute(&statement, &row)
+                            .await
+                    })
                     .await
                     .map(|_| ())
-                    .map_err(|err| err.into())
-            },
-            Err(err) =>{
-                Err(err.into())
-            },
+                    .map_err(Box::from)
+            }
+            Err(err) => {
+                Err(Box::from(err))
+            }
         }
     }
 }

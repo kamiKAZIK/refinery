@@ -1,6 +1,7 @@
 use rumqttc::{MqttOptions, AsyncClient, Event, Incoming, QoS};
 use std::time::SystemTime;
 use std::time::Duration;
+use log::{error, info};
 use scylla::SessionBuilder;
 
 use crate::configuration::Settings;
@@ -35,12 +36,11 @@ pub async fn run(configuration: Settings) {
         .unwrap();
 
     let storage = StorageImpl::new(session);
-    storage.init()
-        .await;
+    storage.init().await;
 
     while let Ok(event) = eventloop.poll().await {
         if let Event::Incoming(Incoming::Publish(packet)) = event {
-            //println!("Received = {:?}", packet.payload.as_ref());
+            info!("Received: {:?}", packet.payload.as_ref());
 
             match messages::Envelope::try_from(packet.payload.as_ref()) {
                 Ok(message) => {
@@ -52,13 +52,20 @@ pub async fn run(configuration: Settings) {
                             qualifier: item.qualifier,
                             reading: item.value,
                         };
-    
-                        storage.create_reading(record)
-                            .await
-                            .unwrap();
+
+                        match storage.create_reading(record).await {
+                            Ok(_) => {
+                                info!("Stored!")
+                            }
+                            Err(err) => {
+                                error!("Persistence error: {err}")
+                            }
+                        };
                     }
                 },
-                Err(error) => println!("Error = {error}"),
+                Err(err) => {
+                    error!("Messaging error: {err}")
+                },
             }
         }
     }
