@@ -53,9 +53,9 @@ pub async fn run(configuration: Settings) {
                             reading: item.value,
                         };
 
-                        match storage.create_reading(record).await {
+                        match storage.create_reading(&record).await {
                             Ok(_) => {
-                                info!("Stored!")
+                                info!("Stored record: device_id = {}, reading = {}", record.device_id, record.reading)
                             }
                             Err(err) => {
                                 error!("Persistence error: {err}")

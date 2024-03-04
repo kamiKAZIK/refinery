@@ -50,10 +50,10 @@ struct ReadingRow {
     reading: f64,
 }
 
-impl TryFrom<Reading> for ReadingRow {
+impl TryFrom<&Reading> for ReadingRow {
     type Error = SystemTimeError;
 
-    fn try_from(value: Reading) -> Result<Self, Self::Error> {
+    fn try_from(value: &Reading) -> Result<Self, Self::Error> {
         value.timestamp.duration_since(UNIX_EPOCH)
             .map(|duration| {
                 ReadingRow {
@@ -72,7 +72,7 @@ impl TryFrom<Reading> for ReadingRow {
 }
 
 impl ReadingsRepository for ScyllaStorage {
-    async fn create_reading(&self, item: Reading) -> Result<(), Box<dyn Error>> {
+    async fn create_reading(&self, item: &Reading) -> Result<(), Box<dyn Error>> {
         match ReadingRow::try_from(item) {
             Ok(row) => {
                 self.session.prepare("INSERT INTO readings (device_id, alive, timestamp, qualifier, reading) VALUES (?, ?, ?, ?, ?)")
