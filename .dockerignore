@@ -5,6 +5,7 @@
 !entrypoint.sh
 
 !config/default.toml
+!config/log4rs.yaml
 
 !target/release/refinery
 !target/aarch64-unknown-linux-gnu/release/refinery
