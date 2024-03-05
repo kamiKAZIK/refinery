@@ -1,5 +1,6 @@
-use uuid::Uuid;
 use std::time::{Duration, SystemTime};
+
+use uuid::Uuid;
 
 pub struct Reading {
     pub device_id: Uuid,

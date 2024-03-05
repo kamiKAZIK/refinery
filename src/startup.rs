@@ -1,14 +1,14 @@
-use rumqttc::{MqttOptions, AsyncClient, Event, Incoming, QoS};
-use std::time::SystemTime;
-use std::time::Duration;
+use std::time;
+
 use log::{error, info};
+use rumqttc::{AsyncClient, Event, Incoming, MqttOptions, QoS};
 use scylla::SessionBuilder;
 
 use crate::configuration::Settings;
 use crate::messages;
 use crate::models;
-use crate::storage::scylla::ScyllaStorage;
 use crate::storage::ReadingsRepository;
+use crate::storage::scylla::ScyllaStorage;
 
 type StorageImpl = ScyllaStorage;
 
@@ -18,7 +18,7 @@ pub async fn run(configuration: Settings) {
         &configuration.mqtt.host,
         configuration.mqtt.port
     );
-    mqtt_options.set_keep_alive(Duration::from_secs(5));
+    mqtt_options.set_keep_alive(time::Duration::from_secs(5));
 
     let (client, mut eventloop) = AsyncClient::new(mqtt_options, 10);
 
@@ -26,6 +26,8 @@ pub async fn run(configuration: Settings) {
         .subscribe("hello/rumqtt", QoS::AtMostOnce)
         .await
         .unwrap();
+
+    info!("Subscribed to MQTT topics...");
 
     let session = SessionBuilder::new()
         .known_node(&configuration.scylla.uri)
@@ -38,34 +40,44 @@ pub async fn run(configuration: Settings) {
     let storage = StorageImpl::new(session);
     storage.init().await;
 
-    while let Ok(event) = eventloop.poll().await {
-        if let Event::Incoming(Incoming::Publish(packet)) = event {
-            info!("Received: {:?}", packet.payload.as_ref());
+    info!("Initialized storage...");
 
-            match messages::Envelope::try_from(packet.payload.as_ref()) {
-                Ok(message) => {
-                    for item in message.readings {
-                        let record = models::Reading{
-                            device_id: message.device_id,
-                            alive: Duration::from_millis(message.alive),
-                            timestamp: SystemTime::now(),
-                            qualifier: item.qualifier,
-                            reading: item.value,
-                        };
+    loop {
+        match eventloop.poll().await {
+            Ok(event) => {
+                info!("Received message: {:?}", event);
 
-                        match storage.create_reading(&record).await {
-                            Ok(_) => {
-                                info!("Stored record: device_id = {}, reading = {}", record.device_id, record.reading)
+                if let Event::Incoming(Incoming::Publish(packet)) = event {
+                    match messages::Envelope::try_from(packet.payload.as_ref()) {
+                        Ok(message) => {
+                            for item in message.readings {
+                                let record = models::Reading{
+                                    device_id: message.device_id,
+                                    alive: time::Duration::from_millis(message.alive),
+                                    timestamp: time::SystemTime::now(),
+                                    qualifier: item.qualifier,
+                                    reading: item.value,
+                                };
+
+                                match storage.create_reading(&record).await {
+                                    Ok(_) => {
+                                        info!("Stored record: device_id = {}, reading = {}", record.device_id, record.reading)
+                                    }
+                                    Err(err) => {
+                                        error!("Persistence error: {err}")
+                                    }
+                                };
                             }
-                            Err(err) => {
-                                error!("Persistence error: {err}")
-                            }
-                        };
+                        },
+                        Err(err) => {
+                            error!("Messaging error: {err}");
+                        },
                     }
-                },
-                Err(err) => {
-                    error!("Messaging error: {err}")
-                },
+                }
+            }
+            Err(err) => {
+                error!("Polling error: {err}");
+                tokio::time::sleep(time::Duration::from_secs(3)).await;
             }
         }
     }

@@ -1,9 +1,10 @@
 use std::error::Error;
 use std::ops::{Div, Rem};
 use std::time::{SystemTimeError, UNIX_EPOCH};
+
 use futures::TryFutureExt;
-use scylla::frame::value::{CqlDuration, CqlTimestamp};
 use scylla::{FromRow, SerializeRow, Session};
+use scylla::frame::value::{CqlDuration, CqlTimestamp};
 use uuid::Uuid;
 
 use crate::models::Reading;
