@@ -27,7 +27,15 @@ impl ScyllaStorage {
 
     async fn create_tables(&self) {
         let queries = [
-            "CREATE TABLE IF NOT EXISTS readings (device_id UUID PRIMARY KEY, alive DURATION, timestamp TIMESTAMP, qualifier SMALLINT, reading DOUBLE)",
+            r#"
+            CREATE TABLE IF NOT EXISTS readings (
+                device_id UUID,
+                timestamp TIMESTAMP,
+                alive DURATION,
+                qualifier SMALLINT,
+                reading DOUBLE,
+                PRIMARY KEY(device_id, timestamp)
+            )"#,
         ];
 
         for query in queries {
@@ -45,8 +53,8 @@ impl ScyllaStorage {
 #[derive(Debug, FromRow, SerializeRow)]
 struct ReadingRow {
     device_id: Uuid,
-    alive: CqlDuration,
     timestamp: CqlTimestamp,
+    alive: CqlDuration,
     qualifier: i16,
     reading: f64,
 }
@@ -59,12 +67,12 @@ impl TryFrom<&Reading> for ReadingRow {
             .map(|duration| {
                 ReadingRow {
                     device_id: value.device_id,
+                    timestamp: CqlTimestamp(duration.as_millis() as i64),
                     alive: CqlDuration {
                         months: 0,
                         days: value.alive.as_secs().div(24 * 60 * 60) as i32,
                         nanoseconds: value.alive.as_nanos().rem(1000000 * 60 * 60 * 24) as i64
                     },
-                    timestamp: CqlTimestamp(duration.as_millis() as i64),
                     qualifier: value.qualifier as i16,
                     reading: value.reading,
                 }
@@ -76,7 +84,7 @@ impl ReadingsRepository for ScyllaStorage {
     async fn create_reading(&self, item: &Reading) -> Result<(), Box<dyn Error>> {
         match ReadingRow::try_from(item) {
             Ok(row) => {
-                self.session.prepare("INSERT INTO readings (device_id, alive, timestamp, qualifier, reading) VALUES (?, ?, ?, ?, ?)")
+                self.session.prepare("INSERT INTO readings (device_id, timestamp, alive, qualifier, reading) VALUES (?, ?, ?, ?, ?)")
                     .and_then(|statement| async move {
                         self.session.execute(&statement, &row)
                             .await
