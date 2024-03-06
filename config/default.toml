@@ -6,3 +6,7 @@ keyspace = "refinery"
 client_id = "refinery"
 host = "127.0.0.1"
 port = 1883
+topics = [
+    "refinery/sensors/humidity",
+    "refinery/sensors/temperature",
+]

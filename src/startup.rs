@@ -1,7 +1,7 @@
 use std::time;
 
 use log::{error, info};
-use rumqttc::{AsyncClient, Event, Incoming, MqttOptions, QoS};
+use rumqttc::{AsyncClient, Event, Incoming, MqttOptions, QoS, SubscribeFilter};
 use scylla::SessionBuilder;
 
 use crate::configuration::Settings;
@@ -18,12 +18,19 @@ pub async fn run(configuration: Settings) {
         &configuration.mqtt.host,
         configuration.mqtt.port
     );
-    mqtt_options.set_keep_alive(time::Duration::from_secs(5));
+    mqtt_options
+        .set_keep_alive(time::Duration::from_secs(5))
+        .set_credentials(&configuration.mqtt.user, &configuration.mqtt.password);
 
     let (client, mut eventloop) = AsyncClient::new(mqtt_options, 10);
 
     client
-        .subscribe("hello/rumqtt", QoS::AtMostOnce)
+        .subscribe_many(
+            configuration.mqtt
+                .topics
+                .iter()
+                .map(|t| SubscribeFilter::new(t.clone(), QoS::AtLeastOnce))
+        )
         .await
         .unwrap();
 

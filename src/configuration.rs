@@ -18,6 +18,9 @@ pub struct Mqtt {
     pub client_id: String,
     pub host: String,
     pub port: u16,
+    pub user: String,
+    pub password: String,
+    pub topics: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]

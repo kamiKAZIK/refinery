@@ -1,3 +1,10 @@
 [scylla]
 user = "cassandra"
 password = "cassandra"
+
+[mqtt]
+host = "test.mosquitto.org"
+port = 1884
+user = "ro"
+password = "readonly"
+
