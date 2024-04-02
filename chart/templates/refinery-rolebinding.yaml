@@ -1,0 +1,31 @@
+{{- if .Values.refinery.rbac.create -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ template "refinery.fullname" . }}
+  labels: {{- include "refinery.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: global
+    {{- with .Values.refinery.common.labels }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+    {{- with .Values.refinery.roleBinding.labels }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+  {{- if or .Values.refinery.common.annotations .Values.refinery.roleBinding.annotations }}
+  annotations:
+    {{- with .Values.refinery.common.annotations }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+    {{- with .Values.refinery.roleBinding.annotations }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+  {{- end }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ template "refinery.fullname" . }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ template "refinery.fullname" . }}
+  apiGroup: rbac.authorization.k8s.io
+{{- end -}}

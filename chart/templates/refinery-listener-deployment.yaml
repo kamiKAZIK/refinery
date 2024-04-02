@@ -1,0 +1,190 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ printf "%s-listener" (include "refinery.fullname" .) }}
+  labels: {{- include "refinery.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: listener
+    {{- with .Values.refinery.common.labels }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+    {{- with .Values.refinery.generator.listener.deployment.labels }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+  {{- if or .Values.refinery.common.annotations .Values.refinery.generator.listener.deployment.annotations }}
+  annotations:
+    {{- with .Values.refinery.common.annotations }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+    {{- with .Values.refinery.generator.listener.deployment.annotations }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+  {{- end }}
+spec:
+  replicas: {{ required ".Values.refinery.generator.listener.deployment.replicas is required!" .Values.refinery.generator.listener.deployment.replicas }}
+  {{- with .Values.refinery.generator.listener.deployment.strategy }}
+  strategy: {{- toYaml . | trim | nindent 4 }}
+  {{- end }}
+  selector:
+    matchLabels: {{- include "refinery.labels.matchLabels" . | nindent 6 }}
+      app.kubernetes.io/component: listener
+  template:
+    metadata:
+      labels: {{- include "refinery.labels.standard" . | nindent 8 }}
+        app.kubernetes.io/component: listener
+        {{- with .Values.refinery.common.labels }}
+        {{- toYaml . | trim | nindent 8 }}
+        {{- end }}
+        {{- with .Values.refinery.generator.listener.pod.labels }}
+        {{- toYaml . | trim | nindent 8 }}
+        {{- end }}
+      annotations:
+        checksum/listener-config: {{ include (print $.Template.BasePath "/refinery-listener-configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/refinery-secret.yaml") . | sha256sum }}
+        {{- with .Values.refinery.generator.listener.imageDigest }}
+        imageDigest/listener: {{ . }}
+        {{- end }}
+        configVersion: {{ required ".Values.refinery.configVersion is required!" .Values.refinery.configVersion | quote }}
+        {{- with .Values.refinery.common.annotations }}
+        {{- toYaml . | trim | nindent 8 }}
+        {{- end }}
+        {{- with .Values.refinery.generator.listener.pod.annotations }}
+        {{- toYaml . | trim | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.refinery.generator.listener.pod.nodeSelector }}
+      nodeSelector: {{- toYaml . | trim | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ if .Values.refinery.rbac.create }}{{ template "refinery.fullname" . }}{{ else }}{{ required ".Values.refinery.serviceAccount.existing is required!" .Values.refinery.serviceAccount.existing }}{{ end }}
+      {{- with .Values.refinery.generator.listener.pod.tolerations }}
+      tolerations: {{- toYaml . | trim | nindent 8 }}
+      {{- end }}
+      {{- with .Values.refinery.generator.listener.pod.imagePullSecrets }}
+      imagePullSecrets:
+        {{- range . }}
+        - name: {{ . }}
+        {{- end }}
+      {{- end }}
+      containers:
+        - name: listener
+          {{- if .Values.refinery.generator.listener.imageDigest }}
+          image: {{ printf "%s@%s" (required ".Values.refinery.generator.listener.image is required!" .Values.refinery.generator.listener.image) .Values.refinery.generator.listener.imageDigest }}
+          {{- else }}
+          image: {{ printf "%s:%s" (required ".Values.refinery.generator.listener.image is required!" .Values.refinery.generator.listener.image) (required ".Values.refinery.generator.listener.imageTag is required!" .Values.refinery.generator.listener.imageTag) }}
+          {{- end }}
+          imagePullPolicy: {{ required ".Values.refinery.generator.listener.imagePullPolicy is required!" .Values.refinery.generator.listener.imagePullPolicy }}
+          args:
+            - -Dlogback.configurationFile={{ required ".Values.refinery.generator.listener.configurationDirectory is required!" .Values.refinery.generator.listener.configurationDirectory }}/logback.xml
+            {{- if .Values.refinery.generator.listener.jmx.bindPort }}
+            - -Djava.rmi.listener.hostname=127.0.0.1
+            - -Dcom.sun.management.jmxremote=true
+            - -Dcom.sun.management.jmxremote.port={{ .Values.refinery.generator.listener.jmx.bindPort }}
+            - -Dcom.sun.management.jmxremote.rmi.port={{ .Values.refinery.generator.listener.jmx.bindPort }}
+            - -Dcom.sun.management.jmxremote.local.only={{ .Values.refinery.generator.listener.jmx.local.only }}
+            - -Dcom.sun.management.jmxremote.authenticate={{ .Values.refinery.generator.listener.jmx.authenticate }}
+            - -Dcom.sun.management.jmxremote.ssl={{ .Values.refinery.generator.listener.jmx.ssl }}
+            {{- end }}
+            {{- if .Values.refinery.generator.listener.debug.bindPort }}
+            - -jvm-debug
+            - {{ .Values.refinery.generator.listener.debug.bindPort | quote }}
+            {{- end }}
+            {{- range .Values.refinery.generator.listener.args }}
+            - {{ . | quote }}
+            {{- end }}
+          env:
+            - name: CONFIG_PATH
+              value: {{ required ".Values.refinery.generator.listener.configurationDirectory is required!" .Values.refinery.generator.listener.configurationDirectory }}/application-override.conf
+            - name: AMQP_EVENTS_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "refinery.fullname" . }}
+                  key: amqpGeneratorEventsUser
+            - name: AMQP_EVENTS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "refinery.fullname" . }}
+                  key: amqpGeneratorEventsPassword
+            - name: OKTA_listener
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "refinery.fullname" . }}
+                  key: oktaGeneratorlistener
+            - name: OKTA_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "refinery.fullname" . }}
+                  key: oktaGeneratorClientId
+            - name: OKTA_CODE_CHALLENGE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "refinery.fullname" . }}
+                  key: oktaGeneratorCodeChallenge
+            - name: OKTA_CODE_VERIFIER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "refinery.fullname" . }}
+                  key: oktaGeneratorCodeVerifier
+            - name: OKTA_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "refinery.fullname" . }}
+                  key: oktaGeneratorUsername
+            - name: OKTA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "refinery.fullname" . }}
+                  key: oktaGeneratorPassword
+            - name: SLICK_DBS_GENERATOR_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "refinery.fullname" . }}
+                  key: slickDbsGeneratorGeneratorDbUsername
+            {{- if .Values.refinery.generator.listener.slick.dbs.generator.db.password }}
+            - name: SLICK_DBS_GENERATOR_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "refinery.fullname" . }}
+                  key: slickDbsGeneratorGeneratorDbPassword
+            {{- end }}
+            {{- with .Values.refinery.generator.listener.env }}
+            {{- toYaml . | trim | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: srv-bnd
+              containerPort: {{ required ".Values.refinery.generator.listener.bindPort is required!" .Values.refinery.generator.listener.bindPort }}
+            - name: srv-mgmt-bnd
+              containerPort: {{ required ".Values.refinery.generator.listener.pekko.management.http.bindPort is required!" .Values.refinery.generator.listener.pekko.management.http.bindPort }}
+            {{- if .Values.refinery.generator.listener.jmx.bindPort }}
+            - name: srv-jmx-bnd
+              containerPort: {{ .Values.refinery.generator.listener.jmx.bindPort }}
+            {{- end }}
+            {{- if .Values.refinery.generator.listener.debug.bindPort }}
+            - name: srv-dbg-bnd
+              containerPort: {{ .Values.refinery.generator.listener.debug.bindPort }}
+            {{- end }}
+          {{- with .Values.refinery.generator.listener.livenessProbe }}
+          livenessProbe: {{- toYaml . | trim | nindent 12 }}
+          {{- end }}
+          {{- with .Values.refinery.generator.listener.readinessProbe }}
+          readinessProbe: {{- toYaml .| trim | nindent 12 }}
+          {{- end }}
+          {{- with .Values.refinery.generator.listener.resources }}
+          resources: {{- toYaml . | trim | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: listener-config
+              mountPath: {{ required ".Values.refinery.generator.listener.configurationDirectory is required!" .Values.refinery.generator.listener.configurationDirectory }}
+            {{- with .Values.refinery.generator.listener.volumeMounts }}
+            {{- toYaml . | trim | nindent 12 }}
+            {{- end }}
+      securityContext:
+        fsGroup: {{ required ".Values.refinery.generator.listener.pod.securityContext.fsGroup is required!" .Values.refinery.generator.listener.pod.securityContext.fsGroup }}
+      {{- with .Values.refinery.generator.listener.pod.affinities }}
+      affinity: {{- toYaml . | trim | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: listener-config
+          configMap:
+            name: {{ printf "%s-listener" (include "refinery.fullname" .) }}
+        {{- with .Values.refinery.generator.listener.pod.volumes }}
+        {{- toYaml . | trim | nindent 8 }}
+        {{- end }}

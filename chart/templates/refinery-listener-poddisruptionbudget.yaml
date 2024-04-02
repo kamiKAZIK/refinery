@@ -1,0 +1,26 @@
+apiVersion: {{ include "refinery.capabilities.podDisruptionBudget.apiVersion" . }}
+kind: PodDisruptionBudget
+metadata:
+  name: {{ printf "%s-listener" (include "refinery.fullname" .) }}
+  labels: {{- include "refinery.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: listener
+    {{- with .Values.refinery.common.labels }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+    {{- with .Values.refinery.generator.listener.podDisruptionBudget.labels }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+  {{- if or .Values.refinery.common.annotations .Values.refinery.generator.listener.podDisruptionBudget.annotations }}
+  annotations:
+    {{- with .Values.refinery.common.annotations }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+    {{- with .Values.refinery.generator.listener.podDisruptionBudget.annotations }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
+  {{- end }}
+spec:
+  minAvailable: {{ required ".Values.refinery.generator.listener.podDisruptionBudget.minAvailable is required!" .Values.refinery.generator.listener.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels: {{- include "refinery.labels.matchLabels" . | nindent 6 }}
+      app.kubernetes.io/component: listener
