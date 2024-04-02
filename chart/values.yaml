@@ -320,7 +320,7 @@ refinery:
 
     ## Refinery listener image to use in api server container(s).
     ##
-    image: 307422823171.dkr.ecr.eu-west-1.amazonaws.com/tp/identity-set-management-domain
+    image: refinery-listener
 
     ## Identity Set Management image tag.
     ##
